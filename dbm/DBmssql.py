@@ -126,8 +126,8 @@ class MSSQL:
         self.conn.commit()
         c.close()
 
-    def create_pkey(self, table_name:str, schema:str, database:str,
-                    primary_key:Iterable):
+    def create_pkey(self, table_name: str, schema: str, database: str,
+                    primary_key: Iterable):
         """
         """
         pk = ', '.join(primary_key)
@@ -141,7 +141,7 @@ class MSSQL:
         self.conn.commit()
         c.close()
 
-    def insert_row(self, table_name:str, schema:str, database:str, col_:Iterable,
+    def insert_row(self, table_name: str, schema: str, database: str, col_: Iterable,
                    rows_:[Iterable]):
         announce = f"use {database}"
 
@@ -156,8 +156,8 @@ class MSSQL:
         self.conn.commit()
         c.close()
 
-    def select_db(self, database:str, schema:str, table:str, column:Iterable,
-                  distinct=None, condition:str=None, orderby:str=None, groupby:str=None):
+    def select_db(self, database: str, schema: str, table: str, column: Iterable,
+                  distinct=None, condition: str = None, orderby: str = None, groupby: str = None):
         """
         :param database: Name of the directory. ex) WOORIFS
         :param schema: Name of the schema. ex) dbo
@@ -194,11 +194,4 @@ class MSSQL:
 
 if __name__ == '__main__':
     c = MSSQL().instance()
-    # Login Test
-
     c.login(id=get_token("id"), pw=get_token('pw'))
-
-    # tcol1 = ['FUND_ID', 'QTY_BEF', 'QTY_TR', 'QTY_CA', 'SEC_ID']
-    # tcol2 = ['STK_CD', 'ISIN_CD']
-    # var1 = c.select_db("WOORIFS", "dbo", "BMKA1000", column=tcol1, condition="PR_DATE=20210929 and SEC_ID='KR7089860001'")
-    # var2 = c.select_db("WFNS2DB", "", "TS_STOCK", column=tcol2)

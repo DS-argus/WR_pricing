@@ -8,11 +8,11 @@ import numpy as np
 from datetime import date, datetime, timedelta
 
 
-def get_hist_data_from_sql(from_:date,
-                           to_:date,
+def get_hist_data_from_sql(from_: date,
+                           to_: date,
                            idxs: list,
-                           type:str = "o",
-                           ffill:bool = True) -> pd.DataFrame:
+                           type: str = "o",
+                           ffill: bool = True) -> pd.DataFrame:
 
     server = MSSQL.instance()
     server.login(

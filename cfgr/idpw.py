@@ -1,5 +1,6 @@
 import json
 
+# For accessing MSSQL
 def get_token(target:str) -> str:
     loc = r"C:\Users\Wooriam\Documents\idpw\idpw.json"
 

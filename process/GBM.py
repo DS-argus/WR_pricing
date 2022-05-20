@@ -1,4 +1,4 @@
-from idxdata.historical_data import get_hist_data
+from idxdata.historical_data import get_hist_data_from_sql
 
 import pandas as pd
 import numpy as np
@@ -7,34 +7,36 @@ import matplotlib.pyplot as plt
 from datetime import date, timedelta
 
 
-def get_params(u_name: list, start: date, end: date, df_data: pd.DataFrame) -> (dict, dict, np.array):
+def get_params(u_name: list, start: date, end: date) -> (dict, dict, np.array):
     """
     기초자산 종가 dataframe 받아서 지정한 구간의 daily 평균수익률, daily 변동성, corr matrix return
     :param u_name: names of indexes
     :param start: start date for parameter calculation
     :param end: end date for parameter calculation
-    :param df_data: price of indexes dataframe
     :return: return_dict, vol_dict, corr_dataframe
     """
 
-    # 필요한 Underlyings의 data만 추출
-    df_underlying = df_data.loc[start:end][u_name]
+    daily_return = dict()
+    daily_vol = dict()
 
-    daily_return_dict = dict()
-    daily_vol_dict = dict()
+    # get return and volatility
+    for underlying in u_name:
+        data = np.array(get_hist_data_from_sql(start, end, [underlying])).astype(float)
 
-    for i in u_name:
-        ar = np.array(df_underlying[i]).astype(float)
-        ar_return = np.log(ar[1:] / ar[:-1])            # daily log return
-        daily_return = np.mean(ar_return)
-        daily_vol = np.std(ar_return)
+        daily_log_return = np.log([data[1:] / data[:-1]])
 
-        daily_return_dict[i] = daily_return
-        daily_vol_dict[i] = daily_vol
+        r = np.mean(daily_log_return)
+        v = np.std(daily_log_return)
 
-    corr = df_underlying.corr(method='pearson').to_numpy()      # convert to array for visualization
+        daily_return[underlying] = r
+        daily_vol[underlying] = v
 
-    return daily_return_dict, daily_vol_dict, corr
+    # get correlation matrix
+    data_all = get_hist_data_from_sql(start, end, u_name)
+
+    corr = data_all.corr(method='pearson').to_numpy()
+
+    return daily_return, daily_vol, corr
 
 
 def gen_path(u_num: int, m: int, u: dict, sigma: dict, fixed_seed: bool = False) -> dict:
@@ -180,22 +182,29 @@ def GBM_path_for_pricing(num_s: int,
 
 if __name__ == "__main__":
 
-    df = get_hist_data()
-
     s_name = ['KOSPI200', 'S&P500', 'HSCEI']
 
     # 파라미터 측정 기간
     start_date = date(2021, 1, 1)
     end_date = date(2022, 4, 22)
 
-    return_info, vol_info, corr_matrix = get_params(s_name, start_date, end_date, df)
+    return_info, vol_info, corr_matrix = get_params(s_name, start_date, end_date)
+
+    print(return_info['KOSPI200'])
+    print(vol_info['KOSPI200'])
 
     # get_param 안쓰고 직접 입력할 때 아래 두 줄 주석 해제하고 직접 입력(단위: 일)
     # return_info = {'KOSPI200': 0.0001, 'S&P500': 0.0001, 'HSCEI': 0.0001}
     # vol_info = {'KOSPI200': 0.0001, 'S&P500': 0.0001, 'HSCEI': 0.0001}
 
     s_num = len(s_name)
-    period = 365
-    stock_path = GBM_path_for_pricing(s_num, s_name, period, return_info, vol_info, corr=corr_matrix, chart=True)
+    period = 10000
+    stock_path = GBM_path_for_pricing(s_num, s_name, period, return_info, vol_info, corr=corr_matrix, chart=False)
 
-    print(stock_path)
+    a = stock_path['KOSPI200']
+
+    ar = np.array(stock_path).astype('float')
+
+    re = np.log([ar[1:] / ar[:-1]])
+    print(np.mean(re))
+    print(np.std(re))

@@ -11,85 +11,87 @@
 
 
 """
-from els.class_els import SimpleELS
-from idxdata.historical_data import get_hist_data
+import els.class_els
+from els.class_els import SimpleELS, MPELS
 from process.GBM import *
 
 import numpy as np
 from datetime import date
-import multiprocessing
-import multiprocess
 
 
-def get_PV(els, df_price, discount_rate):  # 할인율, Sim 횟수
+class ELSPricing:
+    def __init__(self, els: els.class_els):
+        self.els = els
+        # Set evaluation date as today(default)
+        self.els.start_date = date.today()
+        self.underlying = self.els.get_info()['underlying']
+        self.s_num = len(self.underlying)
+        # generating longer periods of forecasting than maturity of ELS
+        self.period = (self.els.get_info()['maturity'] + 1) * 365
 
-    els.df = df_price
-    els.start_date = df_price.index[0]
-    # return els.get_schedule()
-    els_repayment_month = int(els.get_result()[0]/els.periods)
-    els_repayment_date = els.get_schedule()[els_repayment_month - 1]
-    days_to_repayment = (els_repayment_date - els.start_date).days
+    def get_params(self, from_, to_):
+        parameters = get_params(self.underlying, from_, to_)
+        return parameters
 
-    els_return = els.get_result()[1]  # 0.03
-    # discount_value = 1 + els_return
-    discount_value = (1+els_return) / (np.exp(-discount_rate * (days_to_repayment/360)))
+    def run_simulation(self, simulation_num, discount_rate, r_info, v_info, corr=None):
 
-    return discount_value
+        if corr is None:
+            corr = np.identity(self.s_num)
 
-def process_for_multi_sim():
-    
+        periods = (self.els.get_schedule()[-1] - self.els.start_date).days + 1
+
+        pv_list = np.zeros(simulation_num)
+
+        for i in range(simulation_num):
+            process = GBM_path_for_pricing(self.s_num,
+                                           self.underlying,
+                                           periods,
+                                           r_info,
+                                           v_info,
+                                           self.els.start_date,
+                                           corr,
+                                           fixed_seed=False,
+                                           s_val=None,
+                                           chart=False)
+
+            self.els.df = process
+
+            redemption_month = int(self.els.get_result()[0] / self.els.periods)
+            redemption_date = self.els.get_schedule()[redemption_month - 1]
+            days_to_redemption = (redemption_date - self.els.start_date).days
+
+            els_return = self.els.get_result()[1]
+            present_value = (1 + els_return) / (np.exp(-discount_rate * (days_to_redemption / 365)))
+
+            pv_list[i] = present_value
+
+        price = np.mean(pv_list)
+
+        return price
 
 
 if __name__ == "__main__":
 
     # ELS 정보(엑셀 시트 내에서 받아오는 걸로 수정해야함)
-    underlying = ['KOSPI200', 'EUROSTOXX50']  # 기초자산
-    start_date = date.today()
+    underlying = ['NIKKEI225', 'EUROSTOXX50', 'CSI300']
+    start_date = date.today()           # pricing class에 들어갈때는 상관없음. 초기화됨
     maturity = 3  # 만기(단위:연)
     periods = 6  # 평가(단위:월)
-    coupon = 0.0
-    barrier = [0.95, 0.90, 0.80, 0.75, 0.70, 0.60]
-
-    df = get_hist_data()
+    coupon = 0.0822
+    barrier = [0.90, 0.90, 0.85, 0.80, 0.75, 0.60]
 
     # ELS 생성
-    els1 = SimpleELS(underlying, start_date, maturity, periods, coupon, barrier, df)
+    els1 = MPELS(underlying, start_date, maturity, periods, coupon, barrier,MP_barrier=0.6)
 
-    # 파라미터 측정 기간
-    param_start_date = date(2021, 1, 1)
-    param_end_date = date(2022, 4, 22)
+    # Pricing 실행
+    epr = ELSPricing(els1)
 
-    return_info, vol_info, corr_matrix = get_params(underlying, param_start_date, param_end_date, df)
+    # 파라미터 생성
+    r, v, corr = epr.get_params(date(2021, 1, 1), date(2022, 4, 22))
 
-    s_num = len(underlying)
-    period = 365 * 4
+    # 시뮬레이션
+    sim_num = 1000
+    discount_rate = 0.01
+    result = epr.run_simulation(sim_num, discount_rate, r, v, corr)
 
-    sim = 10000
-
-    def multi_sim(path, i):
-
-    pv_arr = np.zeros(sim)
-
-
-    for i in range(sim):
-        s_path = GBM_path_for_pricing(s_num, underlying, period, return_info, vol_info,
-                                      start_date=start_date, corr=corr_matrix, chart=False)
-
-        pv_arr[i] = get_PV(els1, s_path, 0.02)
-
-    pool = multiprocessing.Pool(4)
-
-    result = pool.starmap(func_for_multi, list_for_multi)
-
-    result_1 = result[0]
-    result_2 = result[1]
-    result_3 = result[2]
-    result_4 = result[3]
-
-    pool.close()
-    pool.join()
-
-    fin_result = (result_1 + result_2 + result_3 + result_4) / 4
-
-    print(f'price of ELS = {fin_result:.4f}')
-
+    print(result)

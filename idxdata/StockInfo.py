@@ -1,0 +1,6 @@
+class DataNames:
+    Ticker = {}
+
+    Calendar = {}
+
+    
