@@ -1,4 +1,4 @@
-from idxdata.historical_data import get_hist_data_from_sql
+#from idxdata.historical_data import get_hist_data_from_sql
 
 import pandas as pd
 import numpy as np
@@ -136,7 +136,7 @@ def gen_price_matrix(path_matrix: np.array, s_val: list = None, chart: bool = Fa
     return price_matrix
 
 
-def cvt_to_df(s: list[str], price_matrix: np.array, start: date = date.today()) -> pd.DataFrame:
+def cvt_to_df(s:list, price_matrix: np.array, start: date = date.today()) -> pd.DataFrame:
     """
     주가 경로 matrix를 dataframe 형태로 변환 -> class_els랑 연결시키려고 dataframe 형태로 변환
     :param s: index for column name
@@ -188,23 +188,35 @@ if __name__ == "__main__":
     start_date = date(2021, 1, 1)
     end_date = date(2022, 4, 22)
 
-    return_info, vol_info, corr_matrix = get_params(s_name, start_date, end_date)
-
-    print(return_info['KOSPI200'])
-    print(vol_info['KOSPI200'])
+    # return_info, vol_info, corr_matrix = get_params(s_name, start_date, end_date)
+    #
+    # print(return_info['KOSPI200'])
+    # print(vol_info['KOSPI200'])
 
     # get_param 안쓰고 직접 입력할 때 아래 두 줄 주석 해제하고 직접 입력(단위: 일)
-    # return_info = {'KOSPI200': 0.0001, 'S&P500': 0.0001, 'HSCEI': 0.0001}
-    # vol_info = {'KOSPI200': 0.0001, 'S&P500': 0.0001, 'HSCEI': 0.0001}
+    return_info = {'KOSPI200': 0.001, 'S&P500': 0.005, 'HSCEI': 0.007}
+    vol_info = {'KOSPI200': 0.01, 'S&P500': 0.05, 'HSCEI': 0.08}
 
     s_num = len(s_name)
-    period = 10000
-    stock_path = GBM_path_for_pricing(s_num, s_name, period, return_info, vol_info, corr=corr_matrix, chart=False)
+    period = 100000
+    stock_path = GBM_path_for_pricing(s_num, s_name, period, return_info, vol_info, chart=False)
+    print(stock_path)
+
 
     a = stock_path['KOSPI200']
-
-    ar = np.array(stock_path).astype('float')
-
+    ar = np.array(a).astype('float')
     re = np.log([ar[1:] / ar[:-1]])
     print(np.mean(re))
     print(np.std(re))
+
+    a1 = stock_path['S&P500']
+    ar1 = np.array(a1).astype('float')
+    re1 = np.log([ar1[1:] / ar1[:-1]])
+    print(np.mean(re1))
+    print(np.std(re1))
+
+    a2 = stock_path['HSCEI']
+    ar2 = np.array(a2).astype('float')
+    re2 = np.log([ar2[1:] / ar2[:-1]])
+    print(np.mean(re2))
+    print(np.std(re2))
