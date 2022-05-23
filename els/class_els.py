@@ -461,10 +461,9 @@ class MPELS(SimpleELS):
 
 if __name__ == "__main__":
 
-    # ELS 정보(엑셀 시트 내에서 받아오는 걸로 수정해야함)
-    underlying = ["HSCEI", 'EUROSTOXX50', 'KOSPI200']  # 기초자산
-    start_date = "2000-01-01"  # 시작일 문자열로 받기
-    start_date = date.fromisoformat(start_date)  # start_date datetime으로 변환
+    # ELS 정보
+    underlying = ["HSCEI", 'EUROSTOXX50', 'KOSPI200']
+    start_date = date(2018, 1, 1)
     maturity = 3  # 만기(단위:연)
     periods = 6  # 평가(단위:월)
     coupon = 0.05
@@ -483,10 +482,4 @@ if __name__ == "__main__":
     els6 = MPELS(underlying, start_date, maturity, periods, coupon, barrier, MP_barrier, df, holiday=True)
     els7 = MPELS(underlying, start_date, maturity, periods, coupon, barrier, MP_barrier, df, holiday=False)
 
-    print(els1.get_result())
-    print(els2.get_result())
-    print(els3.get_result())
-    print(els4.get_result())
-    print(els5.get_result())
-    print(els6.get_result())
     print(els7.get_result())

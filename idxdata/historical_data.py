@@ -111,11 +111,10 @@ def get_hist_data():
 
 
 if __name__ =="__main__":
-    start = date(2000, 1, 1)
+    start = date(2022, 5, 19)
     end = date.today()
     underlying = ['KOSPI200', "EUROSTOXX50", "CSI300"]
-    df = get_hist_data_from_sql(start, end, underlying, type="o")
-    df2 = get_hist_data()
+    df = get_hist_data_from_sql(start, end, underlying, type="w")
 
     print(df)
 

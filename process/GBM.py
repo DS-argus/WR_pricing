@@ -1,4 +1,4 @@
-#from idxdata.historical_data import get_hist_data_from_sql
+from idxdata.historical_data import get_hist_data_from_sql
 
 import pandas as pd
 import numpy as np
@@ -188,35 +188,58 @@ if __name__ == "__main__":
     start_date = date(2021, 1, 1)
     end_date = date(2022, 4, 22)
 
-    # return_info, vol_info, corr_matrix = get_params(s_name, start_date, end_date)
-    #
-    # print(return_info['KOSPI200'])
-    # print(vol_info['KOSPI200'])
+    return_info, vol_info, corr_matrix = get_params(s_name, start_date, end_date)
+    print(return_info)
+    print(vol_info)
 
-    # get_param 안쓰고 직접 입력할 때 아래 두 줄 주석 해제하고 직접 입력(단위: 일)
-    return_info = {'KOSPI200': 0.001, 'S&P500': 0.005, 'HSCEI': 0.007}
-    vol_info = {'KOSPI200': 0.01, 'S&P500': 0.05, 'HSCEI': 0.08}
+    # # get_param 안쓰고 직접 입력할 때 아래 두 줄 주석 해제하고 직접 입력(단위: 일)
+    # return_info = {'KOSPI200': 0.001, 'S&P500': 0.005, 'HSCEI': 0.007}
+    # vol_info = {'KOSPI200': 0.001, 'S&P500': 0.005, 'HSCEI': 0.008}
+
+
 
     s_num = len(s_name)
     period = 100000
     stock_path = GBM_path_for_pricing(s_num, s_name, period, return_info, vol_info, chart=False)
-    print(stock_path)
 
+#    print(gen_path(s_num, 10000, return_info, vol_info, fixed_seed=True))
+    dat = gen_path(s_num, 10000, return_info, vol_info, fixed_seed=True)
+    print(return_info['KOSPI200']*252)
+    print(np.mean(dat[0])*252)
+    print("--------------------")
+    print(return_info['S&P500']*252)
+    print(np.mean(dat[1])*252)
+    print("--------------------")
+    print(return_info['HSCEI']*252)
+    print(np.mean(dat[2])*252)
+    print("--------------------")
 
-    a = stock_path['KOSPI200']
-    ar = np.array(a).astype('float')
-    re = np.log([ar[1:] / ar[:-1]])
-    print(np.mean(re))
-    print(np.std(re))
+    print("--------------------")
+    print("--------------------")
 
-    a1 = stock_path['S&P500']
-    ar1 = np.array(a1).astype('float')
-    re1 = np.log([ar1[1:] / ar1[:-1]])
-    print(np.mean(re1))
-    print(np.std(re1))
+    print(vol_info['KOSPI200']*np.sqrt(252))
+    print(np.std(dat[0])*np.sqrt(252))
+    print("--------------------")
 
-    a2 = stock_path['HSCEI']
-    ar2 = np.array(a2).astype('float')
-    re2 = np.log([ar2[1:] / ar2[:-1]])
-    print(np.mean(re2))
-    print(np.std(re2))
+    print(vol_info['S&P500']*np.sqrt(252))
+    print(np.std(dat[1])*np.sqrt(252))
+
+    print("--------------------")
+    print(vol_info['HSCEI']*np.sqrt(252))
+    print(np.std(dat[2])*np.sqrt(252))
+
+    #
+    # a = stock_path['KOSPI200']
+    # ar = np.array(a).astype('float')
+    # re = np.log([ar[1:] / ar[:-1]])
+    # print(np.mean(re))
+    #
+    # a1 = stock_path['S&P500']
+    # ar1 = np.array(a1).astype('float')
+    # re1 = np.log([ar1[1:] / ar1[:-1]])
+    # print(np.mean(re1))
+    #
+    # a2 = stock_path['HSCEI']
+    # ar2 = np.array(a2).astype('float')
+    # re2 = np.log([ar2[1:] / ar2[:-1]])
+    # print(np.mean(re2))
