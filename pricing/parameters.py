@@ -149,11 +149,10 @@ if __name__ == "__main__":
 
     dt = 180
 
-    print(EWMA_vol(['S&P500'], dt, date(2022, 5, 14), alpha=0.95))
-    print(EWMA_vol(['EUROSTOXX50'], dt, date(2022, 5, 14), alpha=0.95))
+    print(historical_vol(['TESLA'], dt))
+    print(EWMA_vol(['TESLA'], dt, alpha=0.95))
 
-    corr_idx = ['EUROSTOXX50', 'S&P500', 'KOSPI200']
+    print(historical_vol(['AMD'], dt))
+    print(EWMA_vol(['AMD'], dt, alpha=0.95))
 
-    print(historical_corr(corr_idx, dt, to_=date(2022, 5, 14)))
-
-    print(EWMA_corr(corr_idx, dt, to_=date(2022, 5, 14)))
+    print(historical_corr(["TESLA", "AMD"], dt, to_=date(2022,5,23)))

@@ -1,5 +1,5 @@
 from els.gen_schedule import make_joint_calendar, schedule_generator
-from idxdata.historical_data import get_hist_data
+from idxdata.historical_data import get_hist_data_from_sql
 
 import numpy as np
 import pandas as pd
@@ -471,7 +471,7 @@ if __name__ == "__main__":
     KI_barrier = 0.5
     Lizard = {1: 0.90, 2: 0.85}
     MP_barrier = 0.6
-    df = get_hist_data()
+    df = get_hist_data_from_sql(date(2001, 1, 1), date.today(), underlying, type='w')
 
     #ELS 생성
     els1 = SimpleELS(underlying, start_date, maturity, periods, coupon, barrier, df)
