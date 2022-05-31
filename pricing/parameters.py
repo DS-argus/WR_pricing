@@ -147,12 +147,14 @@ def EWMA_corr(name: list, days: int, to_: date = date.today(), alpha: float = 0.
 
 if __name__ == "__main__":
 
-    dt = 180
+    dt = 20
 
-    print(historical_vol(['TESLA'], dt))
-    print(EWMA_vol(['TESLA'], dt, alpha=0.95))
+    print(historical_vol(['S&P500'], dt))
+    print(EWMA_vol(['S&P500'], dt))
 
-    print(historical_vol(['AMD'], dt))
-    print(EWMA_vol(['AMD'], dt, alpha=0.95))
-
-    print(historical_corr(["TESLA", "AMD"], dt, to_=date(2022,5,23)))
+    # print(EWMA_vol(['TESLA'], dt, alpha=0.95))
+    #
+    # print(historical_vol(['AMD'], dt))
+    # print(EWMA_vol(['AMD'], dt, alpha=0.95))
+    #
+    # print(historical_corr(["TESLA", "AMD"], dt, to_=date(2022,5,23)))

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
 
 
 def GBMRandomGenerator(sName: list,
@@ -65,9 +66,9 @@ def MatrixGenerator(path_matrix: np.array,
 
     s_val = np.array(s_val).reshape((len(s_val), 1))
 
-#    price_matrix = np.concatenate((s_val, s_val * np.exp(np.cumsum(path_matrix, axis=1))), axis=1)
+    # same results
+    # price_matrix = np.concatenate((s_val, s_val * np.exp(np.cumsum(path_matrix, axis=1))), axis=1)
     price_matrix = np.concatenate((s_val, s_val * np.cumproduct(np.exp(path_matrix), axis=1)), axis=1)
-
 
     if chart:
         length = len(price_matrix[0])
@@ -108,11 +109,28 @@ if __name__ == "__main__":
         'KOSPI200': 0.2
     }
 
+    price = GBMPathGenerator(sName, steps, rf, vol)
 
-    for i in range(50):
 
-        price = GBMPathGenerator(sName, steps, rf, vol)
 
-        plt.plot(price)
 
-    plt.show()
+    ## check normality --> OK
+    # iteration = 5000
+    # last_price = np.zeros(iteration)
+    #
+    # for i in range(iteration):
+    #
+    #     price = GBMPathGenerator(sName, steps, rf, vol)
+    #     last_price[i] = price.iloc[-1]
+    #
+    # rtn = np.log(last_price)
+    # print(stats.normaltest(rtn))
+    # print(stats.shapiro(rtn))
+    # print(stats.skew(rtn))
+    # print(stats.kurtosis(rtn))
+    # print(stats.probplot(rtn, plot=plt))
+    #
+    # plt.show()
+
+
+
