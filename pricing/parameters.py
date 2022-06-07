@@ -13,14 +13,14 @@ def historical_vol(name: list, days: int, to_: date = date.today()) -> float:
                                   to_,
                                   name)
 
-    data = data.iloc[-days-1:, :]
+    data = data.iloc[-days:, :]
     data_array = np.array(data).astype(float)
 
     log_return = np.log(data_array[1:] / data_array[:-1])
 
-    variance = np.mean(log_return ** 2)
+    variance = np.std(log_return, ddof=1) ** 2
 
-    return np.sqrt(variance * 252)
+    return np.sqrt(variance * 260)
 
 
 def EWMA_vol(name: list, days: int, to_: date = date.today(), alpha: float = 0.95) -> float:
@@ -146,15 +146,11 @@ def EWMA_corr(name: list, days: int, to_: date = date.today(), alpha: float = 0.
 
 
 if __name__ == "__main__":
+    date = date(2022, 5, 23)
 
-    dt = 20
-
-    print(historical_vol(['S&P500'], dt))
-    print(EWMA_vol(['S&P500'], dt))
-
-    # print(EWMA_vol(['TESLA'], dt, alpha=0.95))
-    #
-    # print(historical_vol(['AMD'], dt))
-    # print(EWMA_vol(['AMD'], dt, alpha=0.95))
-    #
-    # print(historical_corr(["TESLA", "AMD"], dt, to_=date(2022,5,23)))
+    print(f'{historical_vol(["TESLA"], 30, date) * 100:.3f}')
+    print(f'{historical_vol(["TESLA"], 60, date) * 100:.3f}')
+    print(f'{historical_vol(["TESLA"], 90, date) * 100:.3f}')
+    print(f'{historical_vol(["TESLA"], 120, date) * 100:.3f}')
+    print(f'{historical_vol(["TESLA"], 180, date) * 100:.3f}')
+    print(f'{historical_vol(["TESLA"], 360, date) * 100:.3f}')
