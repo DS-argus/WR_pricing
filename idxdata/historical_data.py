@@ -91,21 +91,8 @@ def get_price_from_sql(from_: date,
 
 
 if __name__ == "__main__":
-    start = date(2022, 4, 1)
+    start = date(2004, 12, 25)
     end = date.today()
-    underlying = ["S&P500"]
-    Name_rates = [
-        "KW CALL",
-        "KW CD91",
-        "KW SWAP 6M",
-        "KW SWAP 9M",
-        "KW SWAP 1Y",
-        "KW SWAP 2Y",
-        "KW SWAP 3Y",
-        "KW SWAP 4Y",
-        "KW SWAP 5Y",
-        "KW SWAP 7Y",
-        "KW SWAP 10Y"
-    ]
-    df = get_price_from_sql(start, end, Name_rates, ffill=False, type='w')
-    print(df)
+    underlying = ["S&P500", "KOSPI200", "NIKKEI225", "HSCEI", "EUROSTOXX50", "CSI300"]
+    df = get_price_from_sql(start, end, underlying, ffill=True, type='w')
+    xw.view(df)

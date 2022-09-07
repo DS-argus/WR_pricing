@@ -1,5 +1,5 @@
 from els.gen_schedule import make_joint_calendar, schedule_generator
-from idxdata.historical_data import get_hist_data_from_sql
+from idxdata.historical_data import get_price_from_sql
 
 import numpy as np
 import pandas as pd

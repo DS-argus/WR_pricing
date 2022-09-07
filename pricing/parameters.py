@@ -1,4 +1,4 @@
-from idxdata.historical_data import get_hist_data_from_sql
+from idxdata.historical_data import get_price_from_sql
 
 import numpy as np
 import pandas as pd
@@ -9,25 +9,25 @@ from itertools import combinations
 
 def historical_vol(name: list, days: int, to_: date = date.today()) -> float:
 
-    data = get_hist_data_from_sql(to_ - timedelta(days=days * 3),
-                                  to_,
-                                  name)
+    data = get_price_from_sql(to_ - timedelta(days=days * 3),
+                              to_,
+                              name)
 
-    data = data.iloc[-days:, :]
-    data_array = np.array(data).astype(float)
+    data = data.iloc[-days-1:, :]
+
+    data_array = data.to_numpy()
 
     log_return = np.log(data_array[1:] / data_array[:-1])
-
     variance = np.std(log_return, ddof=1) ** 2
 
-    return np.sqrt(variance * 260)
+    return np.sqrt(variance * 250)
 
 
-def EWMA_vol(name: list, days: int, to_: date = date.today(), alpha: float = 0.95) -> float:
+def EWMA_vol(name: list, days: int, to_: date = date.today(), alpha: float = 0.94) -> float:
 
-    data = get_hist_data_from_sql(to_ - timedelta(days=days * 3),
-                                  to_,
-                                  name)
+    data = get_price_from_sql(to_ - timedelta(days=days * 3),
+                              to_,
+                              name)
 
     data = data.iloc[-days-1:, :]
     data_array = data.to_numpy()
@@ -47,7 +47,7 @@ def EWMA_vol(name: list, days: int, to_: date = date.today(), alpha: float = 0.9
     # EWMA variance
     EWMA_variance = np.sum(weight * log_return_squared)
 
-    return np.sqrt(EWMA_variance * 252)
+    return np.sqrt(EWMA_variance * 250)
 
 
 def historical_corr(name: list, days: int, to_: date = date.today()) -> pd.DataFrame:
@@ -64,10 +64,10 @@ def historical_corr(name: list, days: int, to_: date = date.today()) -> pd.DataF
         pair = [u1, u2]
 
         # get and modify data
-        data = get_hist_data_from_sql(to_ - timedelta(days=days * 3),
-                                      to_,
-                                      pair,
-                                      ffill=False)
+        data = get_price_from_sql(to_ - timedelta(days=days * 3),
+                                  to_,
+                                  pair,
+                                  ffill=False)
 
         data.dropna(axis=0, how="any", inplace=True)
         data = data.iloc[-days-1:, :]
@@ -106,10 +106,10 @@ def EWMA_corr(name: list, days: int, to_: date = date.today(), alpha: float = 0.
         pair = [u1, u2]
 
         # get and modify data
-        data = get_hist_data_from_sql(to_ - timedelta(days=days * 3),
-                                      to_,
-                                      pair,
-                                      ffill=False)
+        data = get_price_from_sql(to_ - timedelta(days=days * 3),
+                                  to_,
+                                  pair,
+                                  ffill=False)
 
         data.dropna(axis=0, how="any", inplace=True)
         data = data.iloc[-days-1:, :]
@@ -146,11 +146,19 @@ def EWMA_corr(name: list, days: int, to_: date = date.today(), alpha: float = 0.
 
 
 if __name__ == "__main__":
-    date = date(2022, 5, 23)
 
-    print(f'{historical_vol(["TESLA"], 30, date) * 100:.3f}')
-    print(f'{historical_vol(["TESLA"], 60, date) * 100:.3f}')
-    print(f'{historical_vol(["TESLA"], 90, date) * 100:.3f}')
-    print(f'{historical_vol(["TESLA"], 120, date) * 100:.3f}')
-    print(f'{historical_vol(["TESLA"], 180, date) * 100:.3f}')
-    print(f'{historical_vol(["TESLA"], 360, date) * 100:.3f}')
+    # print(f'{historical_vol(["S&P500"], 30) * 100:.3f}')
+    # print(f'{historical_vol(["S&P500"], 60) * 100:.3f}')
+
+    #print(f'{historical_vol(["S&P500"], 90) * 100:.3f}')
+
+    dt = date.today()
+    print(f'{EWMA_vol(["S&P500"], 60) * 100:.3f}')
+
+    # print(historical_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))
+    # print(EWMA_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))
+
+
+    # print(f'{historical_vol(["TESLA"], 120, date) * 100:.3f}')
+    # print(f'{historical_vol(["TESLA"], 180, date) * 100:.3f}')
+    # print(f'{historical_vol(["TESLA"], 360, date) * 100:.3f}')
