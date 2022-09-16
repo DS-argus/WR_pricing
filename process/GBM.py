@@ -111,6 +111,7 @@ if __name__ == "__main__":
 
     price = GBMPathGenerator(sName, steps, rf, vol)
 
+    print(price)
 
 
 

@@ -1,79 +1,82 @@
 import QuantLib as ql
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
 
 
-class Stockprocess:
-    def __init__(self, nPaths: int, nSteps: int):
-        self.nPaths = nPaths
-        self.nSteps = nSteps
+def GBMprocess(maturity:int,
+               start_date:ql.Date,
+               calendar:ql.Calendar,
+               underlying: list,
+               rf: float,
+               sigma: dict,
+               corr: list = None,
+               spot: list = None) -> pd.DataFrame:
 
-    @staticmethod
-    def GBMprocess(initialValues, mu, sigma):
+    # number of processes need to be generated
+    nProcesses = len(underlying)
 
-        GBM = ql.GeometricBrownianMotionProcess(initialValues, mu, sigma)
+    if corr is None:
+        corr = np.identity(nProcesses).tolist()
 
-        return GBM
+    # if there is no designated spot value, set as 1.0
+    if spot is None:
+        spot = [1.0 for _ in range(nProcesses)]
 
-    def GeneratePaths(self, process):
+    # list containing each process
+    process = []
+    for i in range(nProcesses):
+        process.append(ql.GeometricBrownianMotionProcess(spot[i], rf, sigma[underlying[i]]))
 
-        # generating random seed
-        # URG vs MTUR : seed = 0 제외하고 동일한 것으로 보임 --> 근데 MTUR은 sequenceGenerator에서 에러발생
-        generator = ql.UniformRandomGenerator(0)
+    # process = [ql.GeometricBrownianMotionProcess(spot[i], rf, sigma[underlying[i]]) for i in range(nProcesses)]
 
-        # dimension, Random Number Generator(RNG)를 받음 --> tuple로 난수 리턴해줌
-        sequenceGenerator = ql.UniformRandomSequenceGenerator(self.nSteps, generator)
+    # generate array of correlated 1-D stochastic processes
+    processArray = ql.StochasticProcessArray(process, corr)
 
-        # 정규분포 따르는 난수로 변환
-        gaussianSequenceGenerator = ql.GaussianRandomSequenceGenerator(sequenceGenerator)
+    # make schedule to get number of steps to be created
+    schedule = ql.Schedule(start_date,
+                           start_date + ql.Period(int(maturity), ql.Years),
+                           ql.Period(1, ql.Days),
+                           calendar,  # els.get_calendar() 로 수정
+                           ql.Following,
+                           ql.Following,
+                           ql.DateGeneration.Forward,
+                           False)
 
-        # 결과 저장용
-        paths = np.zeros(shape=(self.nPaths, self.nSteps + 1))
+    schedule = [ql.Date.to_date(x) for x in list(schedule)]
 
-        # process, 만기, 구간, 난수 종류, brownian bridge(T/F)
-        pathGenerator = ql.GaussianPathGenerator(process,
-                                                 3,
-                                                 self.nSteps,
-                                                 gaussianSequenceGenerator,
-                                                 False
-                                                 )
+    timeGrid = ql.TimeGrid(int(maturity), len(schedule) - 1)
+    times = [t for t in timeGrid]
+    nSteps = (len(times) - 1) * nProcesses
 
-        for i in range(self.nPaths):
+    # create random number
+    generator = ql.UniformRandomGenerator()
+    sequenceGenerator = ql.UniformRandomSequenceGenerator(nSteps, generator)
+    gaussianSequenceGenerator = ql.GaussianRandomSequenceGenerator(sequenceGenerator)
+    multiPathGenerator = ql.GaussianMultiPathGenerator(processArray, times, gaussianSequenceGenerator)
 
-           path = pathGenerator.next().value()
-           paths[i, :] = np.array([path[j] for j in range(self.nSteps + 1)])
+    multiPath = multiPathGenerator.next().value()
 
-        return paths
+    df_path = pd.DataFrame(columns=underlying, index=schedule)
+
+    for i in range(nProcesses):
+        df_path.iloc[:, i] = [j for j in multiPath[i]]
+
+    return df_path
 
 
 if __name__ == "__main__":
-    ## 만기는 float도 가능, mue/sigma는 1년 기준 . 따라서 만기를 고정시키려면 mue, sigma를 다르게 해야함
-    nPaths = 50
-    nSteps = 3*365
-    timeGrid = np.linspace(0.0, nSteps, nSteps + 1)
 
-    initialValue = 1
-    mue = 0.03
-    sigma = 00
+    maturity = 3
+    start_date = ql.Date.todaysDate()
+    calendar = ql.JointCalendar(ql.SouthKorea(), ql.HongKong(), ql.UnitedStates())
 
-    stkpr = Stockprocess(nPaths, nSteps)
+    underlying = ['KOSPI200', 'HSCEI', 'S&P500']
+    rf = 0.03
+    sigma = {'KOSPI200': 0.2,
+             'HSCEI': 0.22,
+             'S&P500': 0.25}
+    corr = [[1, 0.73, 0.17],
+            [0.73, 1, 0.28],
+            [0.17, 0.28, 1]]
 
-    gbm = stkpr.GBMprocess(initialValue, mue, sigma)
-
-    process = stkpr.GeneratePaths(gbm)
-
-
-    for i in range(process.shape[0]):
-        path = process[i, :]
-        plt.plot(timeGrid, path)
-
-    plt.show()
-
-
-# 아마 365 베이스인듯...
-# e^(0.05) : 1.0512710963760241
-# 252 :      1.0512658824402437
-# 365 :      1.0512674964674609
-# 360 :      1.0512674464734508
-# 250 :      1.051265840734422
-
+    print(GBMprocess(maturity, start_date, calendar, underlying, rf, sigma, corr))

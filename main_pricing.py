@@ -3,6 +3,7 @@ import time
 import els.class_els
 from els.class_els import *
 from process.GBM import *
+from process.GBMQL import *
 from pricing.parameters import *
 from idxdata.historical_data import *
 from curve.KRWIRScurve import get_KRWIRSdata, get_curve, discount_factor
@@ -10,7 +11,6 @@ import numpy as np
 from datetime import date
 
 from multiprocessing import Pool, Process
-
 
 
 class ELSPricing:
@@ -26,9 +26,9 @@ class ELSPricing:
 
         if self.els.start_date < date.today():
             self.past_price = get_price_from_sql(self.els.start_date,
-                                                     date.today(),
-                                                     self.underlying,
-                                                     type="w")
+                                                 date.today(),
+                                                 self.underlying,
+                                                 type="w")
 
     def historical_vol(self, days: int, to_: date = date.today()):
 
@@ -62,84 +62,98 @@ class ELSPricing:
 
         return result.to_numpy()
 
-    def GBMprocess(self, rf, sigma, corr=None):
+    def GBMprocess(self, spot: list = None) -> pd.DataFrame:
+        maturity = self.els.maturity
+        start_date = ql.Date.from_date(self.eval_date)
+        calendar = self.els.get_calendar()
+        underlying = self.underlying
+        rf = self.rf
+        sigma = self.sigma
+        corr = self.corr.tolist()
 
-        if corr is None:
-            corr = np.identity(self.s_num)
+        df_path = GBMprocess(maturity,
+                             start_date,
+                             calendar,
+                             underlying,
+                             rf,
+                             sigma,
+                             corr,
+                             spot)
 
-        if self.els.start_date < date.today():
-            last_date = self.past_price.index[-1]
-            s_val = self.past_price.loc[last_date, self.underlying]
-            steps = (self.els.get_schedule()[-1] - date.today()).days
+        return df_path
 
-            process = GBMPathGenerator(self.underlying,
-                                       steps,
-                                       rf,
-                                       sigma,
-                                       corr=corr,
-                                       fixed_seed=False,
-                                       s_val=s_val,
-                                       chart=False)
-            process.index = pd.date_range(date.today(), self.els.get_schedule()[-1]).date
-            process.columns = self.underlying
-            GBMprocess = pd.concat([self.past_price, process])
-
-        else:
-            steps = (self.els.get_schedule()[-1] - date.today()).days
-
-            process = GBMPathGenerator(self.underlying,
-                                       steps,
-                                       rf,
-                                       sigma,
-                                       corr=corr,
-                                       fixed_seed=False,
-                                       chart=False)
-
-            process.index = pd.date_range(date.today(), self.els.get_schedule()[-1]).date
-            process.columns = self.underlying
-
-            GBMprocess = process
-
-        return GBMprocess
+    # def GBMprocess2(self) -> pd.DataFrame:
+    #
+    #     if self.corr is None:
+    #         corr = np.identity(self.s_num)
+    #
+    #     if self.els.start_date < date.today():
+    #         last_date = self.past_price.index[-1]
+    #         s_val = self.past_price.loc[last_date, self.underlying]
+    #         steps = (self.els.get_schedule()[-1] - date.today()).days
+    #
+    #         process = GBMPathGenerator(self.underlying,
+    #                                    steps,
+    #                                    self.rf,
+    #                                    self.sigma,
+    #                                    corr=self.corr,
+    #                                    fixed_seed=False,
+    #                                    s_val=s_val,
+    #                                    chart=False)
+    #         process.index = pd.date_range(date.today(), self.els.get_schedule()[-1]).date
+    #         process.columns = self.underlying
+    #         GBMprocess = pd.concat([self.past_price, process])
+    #
+    #     else:
+    #         steps = (self.els.get_schedule()[-1] - date.today()).days
+    #
+    #         process = GBMPathGenerator(self.underlying,
+    #                                    steps,
+    #                                    self.rf,
+    #                                    self.sigma,
+    #                                    corr=self.corr,
+    #                                    fixed_seed=False,
+    #                                    chart=False)
+    #
+    #         process.index = pd.date_range(date.today(), self.els.get_schedule()[-1]).date
+    #         process.columns = self.underlying
+    #
+    #         GBMprocess = process
+    #
+    #     return GBMprocess
 
     def get_curve(self):
         curve_data = get_KRWIRSdata()
         curve = get_curve(self.eval_date, curve_data)
         return curve
 
-    def get_pv(self):
-        process = self.GBMprocess(self.rf, self.sigma, self.corr)
-        self.els.df = process
-        curve = self.get_curve()
-
-        redemption_month = int(self.els.get_result()[0])
-
-        if isinstance(els, MPELS):
-            redemption_date = self.els.get_schedule()[redemption_month - 1]
-        else:
-            idx = int(redemption_month / self.els.periods)
-            redemption_date = self.els.get_schedule()[idx - 1]
-
-        els_return = self.els.get_result()[1]
-        # return 1 + els_return, redemption_date
-
-        DF = discount_factor(redemption_date, curve)
-        present_value = (1 + els_return) * DF
-
-        return present_value
-
-    def simulation(self, simulation_num):
-
-        with Pool(processes=4) as pool:
-            results = pool.starmap(self.get_pv, [() for _ in range(simulation_num)])
-
-        return round(np.mean(np.array(results)) * 100, 2)
+    # def get_pv(self):
+    #     self.els.df = self.GBMprocess()
+    #     curve = self.get_curve()
+    #
+    #     redemption_month = int(self.els.get_result()[0])
+    #
+    #     if isinstance(els, MPELS):
+    #         redemption_date = self.els.get_schedule()[redemption_month - 1]
+    #     else:
+    #         idx = int(redemption_month / self.els.periods)
+    #         redemption_date = self.els.get_schedule()[idx - 1]
+    #
+    #     els_return = self.els.get_result()[1]
+    #
+    #     DF = discount_factor(redemption_date, curve)
+    #     present_value = (1 + els_return) * DF
+    #
+    #     return present_value
+    #
+    # def simulation(self, simulation_num):
+    #
+    #     with Pool(processes=4) as pool:
+    #         results = pool.starmap(self.get_pv, [() for _ in range(simulation_num)])
+    #
+    #     return round(np.mean(np.array(results)) * 100, 2)
 
     def get_price(self, simulation_num):
-
-        rf = self.rf
-        sigma = self.sigma
-        corr = self.corr
 
         # 할인율 커브생성
         curve = self.get_curve()
@@ -148,8 +162,7 @@ class ELSPricing:
 
         for i in range(simulation_num):
 
-            process = self.GBMprocess(rf, sigma, corr)
-            self.els.df = process
+            self.els.df = self.GBMprocess()
 
             redemption_month = int(self.els.get_result()[0])
 
@@ -178,7 +191,6 @@ if __name__ == "__main__":
 
     # ELS 정보
     underlying = ['S&P500', 'EUROSTOXX50']
-    #trading_date = date(2022, 1, 1)
     trading_date = date.today()
     maturity = 3  # 만기(단위:연)
     periods = 6  # 평가(단위:월)
@@ -194,7 +206,7 @@ if __name__ == "__main__":
     epr = ELSPricing(els2)
 
     # process 생성을 위한 금리 --> 3Y zero rate from IRS curve
-    rf = 0.0367
+    rf = 0.0359
 
     # vol, corr for 6 months
     hist_vol = epr.historical_vol(120)
@@ -213,6 +225,10 @@ if __name__ == "__main__":
 
     simulation_num = 5000
 
+
+    print(epr.GBMprocess())
+
+    #
     # start = time.time()
     # print(epr.simulation(simulation_num))
     # print(time.time()-start)
