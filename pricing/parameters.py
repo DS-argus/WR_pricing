@@ -50,6 +50,28 @@ def EWMA_vol(name: list, days: int, to_: date = date.today(), alpha: float = 0.9
     return np.sqrt(EWMA_variance * 250)
 
 
+def implied_vol(name: list, period: str, to_: date = date.today()) -> float:
+
+    if period == '30d':
+        flds = '30DAY_IMPVOL_100.0%MNY_DF'
+    elif period == '60d':
+        flds = '60DAY_IMPVOL_100.0%MNY_DF'
+    elif period == '3m':
+        flds = '3MTH_IMPVOL_100.0%MNY_DF'
+    elif period == '6m':
+        flds = '6MTH_IMPVOL_100.0%MNY_DF'
+    else:
+        raise Exception('Check IVOL period again')
+
+    data = get_price_from_sql(to_ - timedelta(days=5),
+                              to_,
+                              name,
+                              flds,
+                              ffill=False)
+
+    return data.iloc[-1, 0] / 100
+
+
 def historical_corr(name: list, days: int, to_: date = date.today()) -> pd.DataFrame:
 
     items = [i for i in range(len(name))]
@@ -153,7 +175,7 @@ if __name__ == "__main__":
     #print(f'{historical_vol(["S&P500"], 90) * 100:.3f}')
 
     dt = date.today()
-    print(f'{EWMA_vol(["S&P500"], 60) * 100:.3f}')
+    print(implied_vol(['S&P500'], '30d'))
 
     # print(historical_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))
     # print(EWMA_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))
