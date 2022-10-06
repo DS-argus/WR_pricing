@@ -49,8 +49,28 @@ class SimpleELS:
             self.holiday
         )
 
+    # start_date가 휴장인 경우, df에 start_date가 없어 initial price 오류발생 해결
     def get_initial_price(self) -> pd.DataFrame:
-        df_initial_price = self.df.loc[self.start_date][self.underlying]
+        if self.holiday is True:
+            start_date = ql.Date.from_date(self.start_date)
+            schedule = ql.Schedule(start_date,
+                                   start_date + ql.Period(self.maturity, ql.Years),
+                                   ql.Period(self.periods, ql.Months),
+                                   self.get_calendar(),
+                                   ql.Following,
+                                   ql.Following,
+                                   ql.DateGeneration.Forward,
+                                   False)
+
+            # from ql.Date to datetime.date
+            schedule = [ql.Date.to_date(x) for x in list(schedule)]
+
+            idx = schedule[0]
+
+        else:
+            idx = self.start_date
+
+        df_initial_price = self.df.loc[idx][self.underlying]
         return np.array(df_initial_price).reshape(1, len(self.underlying))
 
     def get_schedule_price(self) -> pd.DataFrame:
@@ -471,10 +491,10 @@ if __name__ == "__main__":
     KI_barrier = 0.5
     Lizard = {1: 0.90, 2: 0.85}
     MP_barrier = 0.6
-    df = get_hist_data_from_sql(date(2001, 1, 1), date.today(), underlying, type='w')
+    df = get_price_from_sql(date(2001, 1, 1), date.today(), underlying, type='w')
 
     #ELS 생성
-    els1 = SimpleELS(underlying, start_date, maturity, periods, coupon, barrier, df)
+    els1 = SimpleELS(underlying, start_date, maturity, periods, coupon, barrier, df, holiday=True)
     els2 = Erase3To1ELS(underlying, start_date, maturity, periods, coupon, barrier, 2, df)
     els3 = KIELS(underlying, start_date, maturity, periods, coupon, barrier, KI_barrier, df)
     els4 = LizardELS(underlying, start_date, maturity, periods, coupon, barrier, Lizard, 1, df)
@@ -482,4 +502,7 @@ if __name__ == "__main__":
     els6 = MPELS(underlying, start_date, maturity, periods, coupon, barrier, MP_barrier, df, holiday=True)
     els7 = MPELS(underlying, start_date, maturity, periods, coupon, barrier, MP_barrier, df, holiday=False)
 
-    print(els7.get_result())
+    print(els1.get_schedule())
+    print(els1.get_schedule_price())
+    print(els1.get_initial_price())
+    print(els1.get_initial_price())
