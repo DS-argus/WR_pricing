@@ -77,7 +77,7 @@ def schedule_generator(maturity, periods, start_date, joint_calendar, holiday=Tr
 
 
 if __name__ =="__main__":
-    underlying = ['KOSPI200', "EUROSTOXX50"]
+    underlying = ['S&P500', "EUROSTOXX50", "CSI300"]
     joint_calendar = make_joint_calendar(underlying)
     schedule = schedule_generator(3, 6, date.today(), joint_calendar, True)
 

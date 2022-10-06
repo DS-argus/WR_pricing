@@ -145,12 +145,12 @@ class ELSPricing:
 if __name__ == "__main__":
 
     # ELS 정보
-    underlying = ['S&P500', 'EUROSTOXX50', 'CSI300']
+    underlying = ['S&P500', 'EUROSTOXX50', 'NIKKEI225']
     trading_date = date.today()
     maturity = 3  # 만기(단위:연)
     periods = 6  # 평가(단위:월)
-    coupon = 0.087
-    barrier = [0.90, 0.85, 0.80, 0.80, 0.75, 0.65]
+    coupon = 0.02
+    barrier = [0.85, 0.85, 0.85, 0.80, 0.80, 0.65]
     KI_barrier = 0.5
 
     # ELS 생성
@@ -158,10 +158,9 @@ if __name__ == "__main__":
     els2 = KIELS(underlying, trading_date, maturity, periods, coupon, barrier, KI_barrier)
 
     # Pricing 실행
-    epr = ELSPricing(els2)
-
+    epr = ELSPricing(els1)
     # process 생성을 위한 금리 --> 3Y zero rate from IRS curve
-    rf = 0.0432
+    rf = 0.0414
 
     # Historical, EWMA vol and corr
     hist_vol = epr.historical_vol(120)
@@ -181,6 +180,10 @@ if __name__ == "__main__":
     epr.rf = rf
     epr.sigma = ivol_30d
     epr.corr = avg_corr
+    print(epr.rf)
+    print(epr.sigma)
+    print(epr.corr)
+    print(epr.GBMprocess())
 
     simulation_num = 5000
 

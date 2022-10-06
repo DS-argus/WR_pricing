@@ -175,6 +175,8 @@ if __name__ == "__main__":
     #print(f'{historical_vol(["S&P500"], 90) * 100:.3f}')
 
     dt = date.today()
+    # print(implied_vol(['KOSPI200'], '30d'))
+    # print(implied_vol(['NIKKEI225'], '30d'))
     print(implied_vol(['S&P500'], '30d'))
 
     # print(historical_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))

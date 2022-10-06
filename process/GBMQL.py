@@ -68,12 +68,14 @@ if __name__ == "__main__":
 
     maturity = 3
     start_date = ql.Date.todaysDate()
-    calendar = ql.JointCalendar(ql.SouthKorea(), ql.HongKong(), ql.UnitedStates())
+    calendar = ql.JointCalendar(ql.SouthKorea(), ql.China(), ql.UnitedStates())
 
-    underlying = ['KOSPI200', 'HSCEI', 'S&P500']
+    underlying = ['KOSPI200',
+                  'NIKKEI225',
+                  'S&P500']
     rf = 0.03
     sigma = {'KOSPI200': 0.2,
-             'HSCEI': 0.22,
+             'NIKKEI225': 0.22,
              'S&P500': 0.25}
     corr = [[1, 0.73, 0.17],
             [0.73, 1, 0.28],

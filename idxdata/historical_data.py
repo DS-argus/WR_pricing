@@ -91,8 +91,8 @@ def get_price_from_sql(from_: date,
 
 
 if __name__ == "__main__":
-    start = date(2004, 12, 25)
+    start = date(2022, 9, 20)
     end = date.today()
     underlying = ["S&P500", "KOSPI200", "NIKKEI225", "HSCEI", "EUROSTOXX50", "CSI300"]
-    df = get_price_from_sql(start, end, underlying, ffill=True, type='w')
+    df = get_price_from_sql(start, end, underlying, flds='30DAY_IMPVOL_100.0%MNY_DF', ffill=True, type='o')
     xw.view(df)
