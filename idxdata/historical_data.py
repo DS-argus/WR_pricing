@@ -71,7 +71,7 @@ def get_price_from_sql(from_: date,
 
     # 모든 날 추가한 version
     elif type == "w":
-        dt_rng = pd.date_range(from_, to_).date
+        dt_rng = pd.date_range(from_1, to_).date
         d_weekend = pd.DataFrame(index=dt_rng, columns=idxs)
         d_weekend.index.name = "Date"
 

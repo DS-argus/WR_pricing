@@ -175,12 +175,25 @@ if __name__ == "__main__":
     #print(f'{historical_vol(["S&P500"], 90) * 100:.3f}')
 
     dt = date.today()
-    # print(implied_vol(['KOSPI200'], '30d'))
-    # print(implied_vol(['NIKKEI225'], '30d'))
+    print(implied_vol(['KOSPI200'], '30d'))
+    print(implied_vol(['EUROSTOXX50'], '30d'))
     print(implied_vol(['S&P500'], '30d'))
+    print("----------------------------")
+
+    print(EWMA_vol(['KOSPI200'], 30))
+    print(EWMA_vol(['EUROSTOXX50'], 30))
+    print(EWMA_vol(['S&P500'], 30))
+    print("----------------------------")
+
+    print(historical_vol(['KOSPI200'], 30))
+    print(historical_vol(['EUROSTOXX50'], 30))
+    print(historical_vol(['S&P500'], 30))
+    print("----------------------------")
+
+
 
     # print(historical_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))
-    # print(EWMA_corr(["S&P500", "EUROSTOXX50", "KOSPI200"], 90))
+    # # print(historical_corr(["S&P500", "EUROSTOXX50", "HSCEI"], 90))
 
 
     # print(f'{historical_vol(["TESLA"], 120, date) * 100:.3f}')

@@ -1,3 +1,16 @@
+"""
+▪ Many banks now consider that OIS rates should be used for
+discounting when collateralized portfolios are valued and that
+LIBOR should be used for discounting when portfolios are not
+collateralized.
+
+https://www.linkedin.com/pulse/python-bootstrapping-zero-curve-sheikh-pancham/
+This is called the settlement date and all cash flows are
+net present valued to the settlement date when the deal is struck.
+So given a curve date of today, the curve settlement date is calculated
+as the number of settle days from today, adjusted to business days.
+"""
+
 import numpy as np
 import pandas as pd
 
@@ -10,23 +23,9 @@ import matplotlib.pyplot as plt
 from datetime import date, timedelta
 
 
-"""
-▪ Many banks now consider that OIS rates should be used for
-discounting when collateralized portfolios are valued and that
-LIBOR should be used for discounting when portfolios are not
-collateralized.
-
-https://www.linkedin.com/pulse/python-bootstrapping-zero-curve-sheikh-pancham/
-This is called the settlement date and all cash flows are 
-net present valued to the settlement date when the deal is struck.
-So given a curve date of today, the curve settlement date is calculated 
-as the number of settle days from today, adjusted to business days.
-"""
-
 def get_KRWIRSdata():
 
     Name_rates = [
-        # "KW CALL",
         "KW CD91",
         "KW SWAP 6M",
         "KW SWAP 9M",
@@ -52,19 +51,20 @@ def get_KRWIRSdata():
 #    Tenor = ['1D', '3M', '6M', '9M', '1Y', '2Y', '3Y', '4Y', '5Y', '7Y', '10Y']
     Tenor = ['3M', '6M', '9M', '1Y', '2Y', '3Y', '4Y', '5Y', '7Y', '10Y']
 
+    calendar = ql.TARGET()
 
     Maturity = [
         # ql.SouthKorea().advance(ref, ql.Period(1, ql.Days)),
-        ql.SouthKorea().advance(ref, ql.Period(3, ql.Months)),
-        ql.SouthKorea().advance(ref, ql.Period(6, ql.Months)),
-        ql.SouthKorea().advance(ref, ql.Period(9, ql.Months)),
-        ql.SouthKorea().advance(ref, ql.Period(1, ql.Years)),
-        ql.SouthKorea().advance(ref, ql.Period(2, ql.Years)),
-        ql.SouthKorea().advance(ref, ql.Period(3, ql.Years)),
-        ql.SouthKorea().advance(ref, ql.Period(4, ql.Years)),
-        ql.SouthKorea().advance(ref, ql.Period(5, ql.Years)),
-        ql.SouthKorea().advance(ref, ql.Period(7, ql.Years)),
-        ql.SouthKorea().advance(ref, ql.Period(10, ql.Years))
+        calendar.advance(ref, ql.Period(3, ql.Months)),
+        calendar.advance(ref, ql.Period(6, ql.Months)),
+        calendar.advance(ref, ql.Period(9, ql.Months)),
+        calendar.advance(ref, ql.Period(1, ql.Years)),
+        calendar.advance(ref, ql.Period(2, ql.Years)),
+        calendar.advance(ref, ql.Period(3, ql.Years)),
+        calendar.advance(ref, ql.Period(4, ql.Years)),
+        calendar.advance(ref, ql.Period(5, ql.Years)),
+        calendar.advance(ref, ql.Period(7, ql.Years)),
+        calendar.advance(ref, ql.Period(10, ql.Years))
     ]
 
     Type = [
@@ -100,8 +100,7 @@ def get_curve(today, quote):
 
     todays_date = ql.Date.from_date(today)
     ql.Settings.instance().evaluationDate = todays_date
-
-    calendar = ql.SouthKorea()
+    calendar = ql.TARGET()
     dayCounter = ql.Actual365Fixed()
     convention = ql.ModifiedFollowing
     settlementDays = 0
@@ -129,7 +128,6 @@ def get_curve(today, quote):
 
     curve = ql.PiecewiseLinearZero(todays_date, helpers, dayCounter)
     curve_ff = ql.PiecewiseFlatForward(todays_date, helpers, dayCounter)
-
     return curve
 
 
@@ -167,17 +165,9 @@ def forward_rate(dt, curve):
     return forwardrate
 
 
-if __name__ == "__main__":
+def get_quote():
     quote = get_KRWIRSdata()
     curve = get_curve(date.today(), quote)
-
-    # for i in range(len(curve.dates())):
-    #     print(ql.Date.to_date(curve.dates()[i]))
-    #     print(curve.nodes()[i])
-    #
-    # # for i in range(100):
-    # #     print(date.today() + timedelta(days=i))
-    # #     print(zero_rate(date.today() + timedelta(days=i), curve))
 
     quote['discount factor'] = np.nan
     quote['zero rate'] = np.nan
@@ -188,12 +178,10 @@ if __name__ == "__main__":
         quote.loc[tenor, 'zero rate'] = zero_rate(dt, curve) * 100
         quote.loc[tenor, 'forward rate'] = forward_rate(dt, curve) * 100
 
-    print(quote)
-    #xw.view(quote)
-    #
-    # plt.plot(quote['Rates'])
-    # plt.plot(quote['zero rate'])
-    # plt.plot(quote['forward rate'])
-    #
-    # plt.show()
+    return quote
+
+
+if __name__ == "__main__":
+    df = get_quote()
+    print(df)
 

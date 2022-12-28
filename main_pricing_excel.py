@@ -139,68 +139,96 @@ class ELSPricing:
 
         price = np.mean(pv_list)
 
-        return round(price * 100, 2)
+        return price
+
+def print_to_excel():
+
+    wb = xw.Book.caller()
+    ws = wb.sheets['main']
+
+    # get inputs
+    start_date = date.today()
+    underlying = [i for i in ws.range("B4:D4").value if i is not None]
+    maturity = int(ws.range("B5").value)
+    periods = int(ws.range("B6").value)
+    coupon = ws.range("B7").value
+    barrier = [float(i) / 100 for i in ws.range("B8").value.split("-")]
+    KI_barrier = ws.range("B9").value
+    MP_barrier = ws.range("B10").value
+
+    Lizard_barrier = {ws.range("B11").value: ws.range("B12").value,
+                      ws.range("C11").value: ws.range("C12").value,
+                      ws.range("D11").value: ws.range("D12").value}
+    Lizard_barrier = {int(k): float(v) / 100 for k, v in Lizard_barrier.items() if v is not None}
+
+    # create ELS class
+    if ws.range("B3").value == "일반 ELS":
+        els = SimpleELS(underlying, start_date, maturity, periods, coupon, barrier)
+    elif ws.range("B3").value == "낙인 ELS":
+        els = KIELS(underlying, start_date, maturity, periods, coupon, barrier, KI_barrier)
+    elif ws.range("B3").value == "리자드 ELS":
+        els = LizardELS(underlying, start_date, maturity, periods, coupon, barrier, Lizard_barrier, 1)
+    elif ws.range("B3").value == "리자드 낙인 ELS":
+        els = LizardKIELS(underlying, start_date, maturity, periods, coupon, barrier, KI_barrier, Lizard_barrier, 1)
+    elif ws.range("B3").value == "월지급 ELS":
+        els = MPELS(underlying, start_date, maturity, periods, coupon, barrier, MP_barrier)
+
+    # create ELS pricing class
+    epr = ELSPricing(els)
+
+    # get pricing parameters
+    rf = get_quote().loc[str(maturity) + "Y", 'zero rate'] / 100
+    simulation_num = int(ws.range("G5").value)
+
+    if ws.range("G3").value == "Hvol":
+        vol = epr.historical_vol(int(ws.range("H3").value))
+
+    elif ws.range("G3").value == "EWMAvol":
+        vol = epr.EWMA_vol(int(ws.range("H3").value))
+
+    elif ws.range("G3").value == "AVGvol":
+        Hvol = epr.historical_vol(int(ws.range("H3").value))
+        EWMAvol = epr.EWMA_vol(int(ws.range("H3").value))
+        vol = {i: round(((Hvol.get(i, 0) + EWMAvol.get(i, 0)) / 2), 4)
+               for i in Hvol.keys() | EWMAvol.keys()}
+
+    elif ws.range("G3").value == "Ivol":
+        vol = epr.implied_vol(ws.range("H3").value)
+
+    if ws.range("G4").value == "Hcorr":
+        corr = epr.historical_corr(int(ws.range("H4").value))
+
+    elif ws.range("G4").value == "EWMAcorr":
+        corr = epr.EWMA_corr(int(ws.range("H4").value))
+
+    elif ws.range("G4").value == "AVGcorr":
+        Hcorr = epr.historical_corr(int(ws.range("H4").value))
+        EWMAcorr = epr.EWMA_corr(int(ws.range("H4").value))
+        corr = (Hcorr + EWMAcorr) / 2
+
+    # setting pricing class
+    epr.rf = rf
+    epr.sigma = vol
+    epr.corr = corr
+
+    start = time.time()
+    price = epr.get_price(simulation_num)
+    cons_ts = time.time() - start
+
+    ws.range("K4:L11").clear_contents()
+    ws.range("N8:P11").clear_contents()
+
+    ws.range("K3").value = price
+    ws.range("K5").value = vol
+    ws.range("N5").value = corr
+    ws.range("K1").value = f"{cons_ts:.5f} sec"  # time
+    ws.range("M1").value = time.strftime("%y/%m/%d %H:%M:%S", time.localtime())
+
+    return
 
 
 if __name__ == "__main__":
 
-    # ELS 정보
-    underlying = ['S&P500', 'EUROSTOXX50', 'KOSPI200']
-    trading_date = date.today()
-    maturity = 3  # 만기(단위:연)
-    periods = 6  # 평가(단위:월)
-    coupon = 0.084
-    barrier = [0.85, 0.85, 0.85, 0.80, 0.75, 0.65]
-    Lizard_barrier = {1: 0.75, 2: 0.7}
-    KI_barrier = 0.5
-
-    # ELS 생성
-    els1 = SimpleELS(underlying, trading_date, maturity, periods, coupon, barrier)
-    els2 = KIELS(underlying, trading_date, maturity, periods, coupon, barrier, KI_barrier)
-    els3 = LizardELS(underlying, trading_date, maturity, periods, coupon, barrier, Lizard_barrier, 1)
-
-    # Pricing 실행
-    epr = ELSPricing(els3)
-    # process 생성을 위한 금리 --> 3Y zero rate from IRS curve
-    rf = get_quote().loc[str(maturity)+"Y", 'zero rate'] / 100
-
-    # Historical, EWMA vol and corr
-    hist_vol = epr.historical_vol(30)
-    ewma_vol = epr.EWMA_vol(30)
-    avg_vol = {i: (hist_vol.get(i, 0) + ewma_vol.get(i, 0)) / 2 for i in hist_vol.keys() | ewma_vol.keys()}
-
-    avg_corr = (epr.historical_corr(120) + epr.EWMA_corr(120)) / 2
-
-    # Implied vol
-    ivol_30d = epr.implied_vol('30d')
-    ivol_60d = epr.implied_vol('60d')
-    ivol_3m = epr.implied_vol('3m')
-    ivol_6m = epr.implied_vol('6m')
-
-    print(hist_vol)
-    print(ewma_vol)
-    print(avg_vol)
-    print(ivol_30d)
-    print(ivol_60d)
-    print(ivol_3m)
-    print(ivol_6m)
-
-    print(rf)
-
-    # # 시뮬레이션
-    # epr.rf = rf
-    # epr.sigma = ivol_6m
-    # epr.corr = avg_corr
-    #
-    # print("계산에 사용된 Parameters")
-    # print(f"drift = {epr.rf}")
-    # print(f"변동성 = {epr.sigma}")
-    # print(f"상관계수 = {epr.corr}")
-    #
-    # simulation_num = 5000
-    #
-    # start = time.time()
-    # print(epr.get_price(simulation_num))
-    # print(time.time()-start)
-
+    xw.Book(r"\\172.31.1.222\Deriva\자동화\자동화폴더\구조화증권위험분석\구조화증권위험분석.xlsm").set_mock_caller()
+    print_to_excel()
 
